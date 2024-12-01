@@ -88,4 +88,26 @@ Represents an executed trade resulting from matching orders.
 - Response: Returns the order_id of the newly created order.
 
 ## Testing the Application
-The code file contains a [`postman collection`](https://github.com/Iltwats/order-api/blob/main/extras/Trade%20Matching%20Engine.postman_collection.json) with all the http requests available in this project.
+The code file contains a [`postman collection`](https://github.com/Iltwats/order-api/blob/main/extras/testing/Trade%20Matching%20Engine.postman_collection.json) with all the http requests available in this project.
+
+## Additional Enhancements
+### 1. Concurrency Handling:
+   - Currently the application doesn't handle concurrent loads, and with shared data structure like in-memory order book race condiditions could happen, thus all operations are needed to be executed in a single thread.
+   - We can make use `async-await` for methods in `app.py` and need to ensure that shared resources are accessed safely in an asynchronous context, where `asyncio.Lock` will be used in `order_book.py` to protect critical sections.
+   - Although, with these modification we can prevent race conditions and handle concurrent requests efficiently, but in-memory order book may become a bottleneck if it grows large.
+   
+### 2. Data Persistence:
+
+  Currently, if app crashes or stops all the the data is gone and we cannot restore the state.
+  
+  The persistence layer could be one that logs all executed trades and orders to a document (like a write-ahead log). In case of a crash or application restart, the system should be able to restore its state from this log file. 
+  This approach will allow the application to recover its order book and trades upon restart.
+
+  Proposed Change:
+  - **Write-Ahead Logging (WAL)**: Every action that alters the state of the service, such as placing an order, modifying an order, canceling an order, or executing a trade—is immediately logged to a file (order_book.log) before updating the in-memory state.
+- **Asynchronous File Operations**: Utilizing asynchronous file I/O operations using the `aiofiles` library to write log entries without blocking the event loop, which will support the single-threaded approach as well.
+- **State Restoration on Startup**: After application startup, the system will reads the log file and sequentially replay all the recorded actions to rebuild the order book and trade history.
+
+
+Furthur on this file, can be connected to database service, to support changes on both sides.
+
