@@ -67,3 +67,25 @@ Represents an executed trade resulting from matching orders.
     - ask_order_id: order_id of the sell order.
 
 ## Important Functions
+### 1. `_match_order` in `OrderBook` Class
+**Purpose**: Matches incoming orders against existing orders in the opposite side of the order book.
+
+**Key Steps**:
+
+- **Identify Matching Orders**: Determines which existing orders can be matched based on price and side.
+- **Execute Trades**: For each matching order, executes trades and updates the quantities and statuses.
+- **Update Last Traded Price**: Keeps track of the most recent trade price.
+- **Create Trade Records**: Generates Trade objects for each executed trade.
+
+### 2. `place_order` Endpoint in `app.py`
+**Purpose**: Handles incoming requests to place new orders.
+
+**Key Steps:**
+
+- Input Validation: Ensures that all required fields are present and valid.
+- Order Creation: Creates an Order object with the provided details.
+- Order Placement: Calls order_book.place_order(order) to add the order to the system.
+- Response: Returns the order_id of the newly created order.
+
+## Testing the Application
+The code file contains a [`postman collection`](https://github.com/Iltwats/order-api/blob/main/Trade%20Matching%20Engine.postman_collection.json) with all the http requests available in this project.
