@@ -88,4 +88,4 @@ Represents an executed trade resulting from matching orders.
 - Response: Returns the order_id of the newly created order.
 
 ## Testing the Application
-The code file contains a [`postman collection`](https://github.com/Iltwats/order-api/blob/main/Trade%20Matching%20Engine.postman_collection.json) with all the http requests available in this project.
+The code file contains a [`postman collection`](https://github.com/Iltwats/order-api/blob/main/extras/Trade%20Matching%20Engine.postman_collection.json) with all the http requests available in this project.
