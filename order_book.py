@@ -1,10 +1,13 @@
-from collections import defaultdict, deque
+from sortedcontainers import SortedDict
+from collections import deque
 from models import Order, Trade
+
 
 class OrderBook:
     def __init__(self):
-        self.bids = defaultdict(deque)  # Price level to orders
-        self.asks = defaultdict(deque)
+        # sorteddict, allows for efficient insertion, deletion, and lookup operations in O(log n) time.
+        self.bids = SortedDict()  # Price level to orders
+        self.asks = SortedDict()
         self.order_id_map = {}  # Order ID to Order object
         self.trades = []
         self.last_traded_price = None
@@ -32,7 +35,7 @@ class OrderBook:
 
     def modify_order(self, order_id, new_price):
         order = self.order_id_map.get(order_id)
-        if not order or order.status != 'open':
+        if not order or order.status != "open":
             return False
 
         order_queue = self.bids if order.side == 1 else self.asks
@@ -49,7 +52,7 @@ class OrderBook:
 
     def cancel_order(self, order_id):
         order = self.order_id_map.get(order_id)
-        if not order or order.status != 'open':
+        if not order or order.status != "open":
             return False
 
         order_queue = self.bids if order.side == 1 else self.asks
@@ -58,20 +61,22 @@ class OrderBook:
         if not orders_at_price:
             del order_queue[order.price]
 
-        order.status = 'canceled'
+        order.status = "canceled"
         return True
 
     def _add_order(self, order_queue, order):
+        if order.price not in order_queue:
+            order_queue[order.price] = deque()
         order_queue[order.price].append(order)
 
     def _match_order(self, incoming_order, opposite_queue, own_queue):
         if incoming_order.side == 1:
             # Buy order, match against lowest ask
-            price_levels = sorted(opposite_queue)
+            price_levels = opposite_queue.keys()
             comparison = lambda price: price <= incoming_order.price
         else:
             # Sell order, match against highest bid
-            price_levels = sorted(opposite_queue, reverse=True)
+            price_levels = reversed(opposite_queue.keys())
             comparison = lambda price: price >= incoming_order.price
 
         for price in price_levels:
@@ -85,7 +90,7 @@ class OrderBook:
 
                 # Ensure traded_qty is positive
                 if traded_qty <= 0:
-                    break 
+                    break
 
                 trade_price = resting_order.price
 
@@ -95,9 +100,10 @@ class OrderBook:
 
                 if incoming_order.traded_quantity > 0:
                     incoming_order.average_traded_price = (
-                        (incoming_order.average_traded_price * (incoming_order.traded_quantity - traded_qty) + trade_price * traded_qty)
-                        / incoming_order.traded_quantity
-                    )
+                        incoming_order.average_traded_price
+                        * (incoming_order.traded_quantity - traded_qty)
+                        + trade_price * traded_qty
+                    ) / incoming_order.traded_quantity
                 else:
                     incoming_order.average_traded_price = trade_price
 
@@ -106,9 +112,10 @@ class OrderBook:
 
                 if resting_order.traded_quantity > 0:
                     resting_order.average_traded_price = (
-                        (resting_order.average_traded_price * (resting_order.traded_quantity - traded_qty) + trade_price * traded_qty)
-                        / resting_order.traded_quantity
-                    )
+                        resting_order.average_traded_price
+                        * (resting_order.traded_quantity - traded_qty)
+                        + trade_price * traded_qty
+                    ) / resting_order.traded_quantity
                 else:
                     resting_order.average_traded_price = trade_price
 
@@ -134,26 +141,26 @@ class OrderBook:
 
                 # Update order statuses
                 if resting_order.quantity == 0:
-                    resting_order.status = 'filled'
+                    resting_order.status = "filled"
                     orders_at_price.popleft()
                     if not orders_at_price:
                         del opposite_queue[price]
                 else:
-                    resting_order.status = 'open'
+                    resting_order.status = "open"
 
                 if incoming_order.quantity == 0:
-                    incoming_order.status = 'filled'
+                    incoming_order.status = "filled"
                     return
                 else:
-                    incoming_order.status = 'open'
+                    incoming_order.status = "open"
 
         # If not fully matched, add to own queue
-        if incoming_order.quantity > 0 and incoming_order.status != 'filled':
+        if incoming_order.quantity > 0 and incoming_order.status != "filled":
             self._add_order(own_queue, incoming_order)
 
     def get_order_by_id(self, order_id):
         return self.order_id_map.get(order_id)
-    
+
     def get_current_price(self):
         return self.last_traded_price
 
@@ -162,5 +169,6 @@ class OrderBook:
 
     def get_all_trades(self):
         return self.trades
+
 
 order_book = OrderBook()
